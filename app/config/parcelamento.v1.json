@@ -1,0 +1,46 @@
+{
+  "produto": "parcelamento",
+  "versao": 1,
+  "parcelas": {
+    "minimo": 1,
+    "maximo": 24
+  },
+  "juros_por_limite": [
+    {
+      "limite_superior": 1,
+      "percentual": 0.0
+    },
+    {
+      "limite_superior": 3,
+      "percentual": 10.0
+    },
+    {
+      "limite_superior": 6,
+      "percentual": 15.0
+    },
+    {
+      "limite_superior": 9,
+      "percentual": 20.0
+    },
+    {
+      "limite_superior": 12,
+      "percentual": 25.0
+    },
+    {
+      "limite_superior": 15,
+      "percentual": 30.0
+    },
+    {
+      "limite_superior": 18,
+      "percentual": 35.0
+    },
+    {
+      "limite_superior": 21,
+      "percentual": 40.0
+    },
+    {
+      "limite_superior": 24,
+      "percentual": 45.0
+    }
+  ]
+}

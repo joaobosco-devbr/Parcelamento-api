@@ -1,6 +1,7 @@
 from decimal import Decimal, ROUND_HALF_UP
 
-from app.rules import JUROS_POR_PARCELAS, PARCELAS_PERMITIDAS
+from app.rules import MENSAGEM_ERRO_PARCELAS_INVALIDAS, parcelas_sao_validas, obter_percentual_juros
+from app.settings import get_parcelamento_config
 from app.schemas import SimulacaoRequest, SimulacaoResponse
 
 
@@ -15,16 +16,18 @@ def calcular_parcelamento(valor_divida: float, quantidade_parcelas: int) -> dict
     if valor_divida <= 0:
         raise ValueError("valor_divida deve ser maior que zero")
 
-    if quantidade_parcelas not in PARCELAS_PERMITIDAS:
-        raise ValueError("parcelas deve ser uma das opcoes: 1, 3, 6, 9 ou 12")
+    if not parcelas_sao_validas(quantidade_parcelas):
+        raise ValueError(MENSAGEM_ERRO_PARCELAS_INVALIDAS)
 
-    percentual_juros = Decimal(str(JUROS_POR_PARCELAS[quantidade_parcelas]))
+    percentual_juros = Decimal(str(obter_percentual_juros(quantidade_parcelas)))
     valor_original = Decimal(str(valor_divida))
     valor_juros = valor_original * (percentual_juros / Decimal("100"))
     valor_total = valor_original + valor_juros
     valor_parcela = valor_total / Decimal(str(quantidade_parcelas))
+    config = get_parcelamento_config()
 
     return {
+        "versao_configuracao": config.versao,
         "valor_original": arredondar_moeda(valor_original),
         "juros_percentual": arredondar_moeda(percentual_juros),
         "valor_juros": arredondar_moeda(valor_juros),

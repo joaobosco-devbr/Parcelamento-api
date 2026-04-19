@@ -1,6 +1,6 @@
 # Parcelamento API
 
-API REST para simulacao de parcelamento de divida com regras fixas de juros por quantidade de parcelas.
+API REST para simulacao de parcelamento de divida com regras versionadas de juros por faixa de parcelas.
 
 O projeto expoe um endpoint para calcular o valor total da divida, juros aplicados e valor de cada parcela, com validacao de entrada, arredondamento monetario com duas casas decimais e testes automatizados.
 
@@ -46,19 +46,27 @@ parcelamento-api/
 ## Regras de negocio
 
 - `valor_divida` deve ser maior que zero.
-- `parcelas` permitidas: `1`, `3`, `6`, `9` e `12`.
-- As taxas de juros sao fixas por quantidade de parcelas:
+- `parcelas` permitidas: de `1` a `24`.
+- As taxas de juros sao fixas por faixa de parcelas:
 
 | Parcelas | Juros (%) |
 |----------|-----------|
 | 1        | 0.0       |
-| 3        | 10.0      |
-| 6        | 15.0      |
-| 9        | 20.0      |
-| 12       | 25.0      |
+| 2 a 3    | 10.0      |
+| 4 a 6    | 15.0      |
+| 7 a 9    | 20.0      |
+| 10 a 12  | 25.0      |
+| 13 a 15  | 30.0      |
+| 16 a 18  | 35.0      |
+| 19 a 21  | 40.0      |
+| 22 a 24  | 45.0      |
 
 - O calculo usa arredondamento monetario com duas casas decimais.
 - A logica de calculo esta separada em funcao pura para facilitar teste e manutencao.
+- A configuracao do produto fica versionada em `app/config/parcelamento.v1.json`.
+- A API expoe `versao_configuracao` no `health` e na resposta da simulacao.
+- As rotas publicas estao versionadas em `/api/v1`.
+- Os erros da API seguem um contrato padronizado com `code`, `message` e `details`.
 
 ## Como rodar localmente
 
@@ -76,7 +84,19 @@ Para desenvolvimento e testes:
 pip install -r requirements-dev.txt
 ```
 
-### 2. Variaveis de ambiente
+### 2. Configuracao do produto
+
+As regras de parcelamento ficam centralizadas no arquivo versionado:
+
+```text
+app/config/parcelamento.v1.json
+```
+
+Esse arquivo define:
+
+- intervalo minimo e maximo de parcelas
+- tabela de juros por limite superior
+- versao da configuracao aplicada pela API
 
 Atualmente a aplicacao nao exige variaveis de ambiente obrigatorias para execucao.
 
@@ -90,7 +110,7 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000
 
 - API: `http://localhost:8000`
 - Swagger UI: `http://localhost:8000/docs`
-- Health check: `http://localhost:8000/health`
+- Health check: `http://localhost:8000/api/v1/health`
 
 ## Como rodar com Docker
 
@@ -141,7 +161,7 @@ Se o terminal atual ainda nao reconhecer `pytest`, abra uma nova sessao do termi
 
 ### Request
 
-`POST /simular`
+`POST /api/v1/simular`
 
 ```json
 {
@@ -154,12 +174,42 @@ Se o terminal atual ainda nao reconhecer `pytest`, abra uma nova sessao do termi
 
 ```json
 {
+  "versao_configuracao": 1,
   "valor_original": 1000.0,
   "juros_percentual": 15.0,
   "valor_juros": 150.0,
   "valor_total": 1150.0,
   "parcelas": 6,
   "valor_parcela": 191.67
+}
+```
+
+### Health
+
+`GET /api/v1/health`
+
+```json
+{
+  "status": "ok",
+  "produto": "parcelamento",
+  "versao_configuracao": 1
+}
+```
+
+## Padrao de erro
+
+Exemplo de erro de validacao:
+
+```json
+{
+  "code": "validation_error",
+  "message": "Dados de entrada invalidos",
+  "details": [
+    {
+      "field": "parcelas",
+      "message": "Value error, parcelas deve estar entre 1 e 24"
+    }
+  ]
 }
 ```
 

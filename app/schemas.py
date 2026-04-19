@@ -1,6 +1,6 @@
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from app.rules import PARCELAS_PERMITIDAS
+from app.rules import MENSAGEM_ERRO_PARCELAS_INVALIDAS, parcelas_sao_validas
 
 
 class SimulacaoRequest(BaseModel):
@@ -26,8 +26,8 @@ class SimulacaoRequest(BaseModel):
     @field_validator("parcelas")
     @classmethod
     def validar_parcelas(cls, value: int) -> int:
-        if value not in PARCELAS_PERMITIDAS:
-            raise ValueError("parcelas deve ser uma das opcoes: 1, 3, 6, 9 ou 12")
+        if not parcelas_sao_validas(value):
+            raise ValueError(MENSAGEM_ERRO_PARCELAS_INVALIDAS)
         return value
 
 
@@ -35,6 +35,7 @@ class SimulacaoResponse(BaseModel):
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
+                "versao_configuracao": 1,
                 "valor_original": 1000.0,
                 "juros_percentual": 15.0,
                 "valor_juros": 150.0,
@@ -45,9 +46,21 @@ class SimulacaoResponse(BaseModel):
         }
     )
 
+    versao_configuracao: int
     valor_original: float
     juros_percentual: float
     valor_juros: float
     valor_total: float
     parcelas: int
     valor_parcela: float
+
+
+class ErrorDetail(BaseModel):
+    field: str
+    message: str
+
+
+class ErrorResponse(BaseModel):
+    code: str
+    message: str
+    details: list[ErrorDetail]
